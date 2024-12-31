@@ -365,13 +365,91 @@ function displayResources(resources) {
             if (resource.title) {
                 const item = document.createElement('div');
                 item.className = 'title-item';
-                item.innerHTML = `
-                    <div class="title-content">
-                        <h3>${resource.movieName || '未命名'}</h3>
-                        <p>${resource.title}</p>
-                    </div>
-                    <div class="views">${resource.views || 0} 次观看</div>
-                `;
+
+                // 第一行：影视剧名称和观看次数
+                const firstLine = document.createElement('div');
+                firstLine.className = 'first-line';
+
+                // 从标题中提取影视剧名称
+                const match = resource.title.match(/《(.+?)》/);
+                const movieName = match ? match[1] : 'undefined';
+
+                const movieNameElem = document.createElement('div');
+                movieNameElem.className = 'movie-name';
+                movieNameElem.textContent = `《${movieName}》`;
+                firstLine.appendChild(movieNameElem);
+
+                const views = document.createElement('div');
+                views.className = 'views';
+                views.textContent = `${resource.views || 0}次观看`;
+                firstLine.appendChild(views);
+
+                // 第二行：标题和操作按钮
+                const secondLine = document.createElement('div');
+                secondLine.className = 'second-line';
+
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = resource.title;
+                secondLine.appendChild(title);
+
+                const actions = document.createElement('div');
+                actions.className = 'actions';
+
+                // 复制标题按钮
+                const copyTitleBtn = document.createElement('button');
+                copyTitleBtn.className = 'copy-btn';
+                copyTitleBtn.textContent = '复制标题';
+                copyTitleBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(resource.title)
+                        .then(() => showToast('标题已复制到剪贴板'))
+                        .catch(() => showToast('复制失败'));
+                };
+                actions.appendChild(copyTitleBtn);
+
+                // 复制片名按钮
+                const copyNameBtn = document.createElement('button');
+                copyNameBtn.className = 'copy-btn';
+                copyNameBtn.textContent = '复制片名';
+                copyNameBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(movieName)
+                        .then(() => showToast('片名已复制到剪贴板'))
+                        .catch(() => showToast('复制失败'));
+                };
+                actions.appendChild(copyNameBtn);
+
+                secondLine.appendChild(actions);
+
+                // 删除按钮
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (confirm('确定要删除这条记录吗？')) {
+                        try {
+                            const response = await fetch(`/api/resources/${resource.id}`, {
+                                method: 'DELETE'
+                            });
+                            if (response.ok) {
+                                item.remove();
+                                showToast('删除成功');
+                            } else {
+                                throw new Error('删除失败');
+                            }
+                        } catch (error) {
+                            console.error('删除失败:', error);
+                            showToast('删除失败');
+                        }
+                    }
+                };
+
+                // 组装所有元素
+                item.appendChild(firstLine);
+                item.appendChild(secondLine);
+                item.appendChild(deleteBtn);
                 container.appendChild(item);
             }
         });

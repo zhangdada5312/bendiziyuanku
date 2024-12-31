@@ -304,24 +304,106 @@ body {
 
 /* 标题列表样式 */
 .title-list {
-    margin-bottom: 30px;
+    padding: 20px;
 }
 
 .title-item {
-    padding: 15px;
-    border-bottom: 1px solid #e1e8ed;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    padding: 12px 20px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .title-item:hover {
     background-color: #f8f9fa;
 }
 
-.title-item .views {
-    color: #666;
+.title-item .first-line {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.title-item .second-line {
+    display: flex;
+    align-items: center;
+}
+
+.title-item .movie-name {
     font-size: 14px;
+    color: #666;
+    padding: 4px 12px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.title-item .views {
+    color: #ff4757;
+    font-size: 14px;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.title-item .title {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+    margin-right: 15px;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.title-item .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.title-item .copy-btn {
+    padding: 4px 12px;
+    font-size: 13px;
+    color: white;
+    background-color: #4e73df;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.title-item .copy-btn:hover {
+    background-color: #2e59d9;
+}
+
+.title-item .delete-btn {
+    padding: 4px 12px;
+    font-size: 13px;
+    color: white;
+    background-color: #dc3545;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.3s;
+    position: absolute;
+    right: 20px;
+    top: 12px;
+}
+
+.title-item {
+    position: relative;
+}
+
+.title-item:hover .delete-btn {
+    opacity: 1;
+}
+
+.title-item .delete-btn:hover {
+    background-color: #c82333;
 }
 
 /* 分页控件 */
