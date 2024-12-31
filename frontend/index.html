@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影视资源库</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>影视资源库</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="搜索影视名称...">
+            <button id="searchBtn">搜索</button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- 左侧添加区域 -->
+            <section class="add-section">
+                <h2>添加新资源</h2>
+                <div class="input-group">
+                    <input type="text" id="movieName" placeholder="输入影视剧名称（可选）">
+                    <button class="clear-btn" id="clearMovieName">×</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="movieTitle" placeholder="输入影视剧标题或粘贴多个">
+                    <button class="xlsx-btn" id="uploadXlsx">
+                        <span>上传XLSX</span>
+                    </button>
+                </div>
+                <div class="upload-area" id="dropZone">
+                    <p class="upload-tip">点击选择图片，或将图片拖放到此处</p>
+                    <p class="upload-tip">支持粘贴图片 (Ctrl+V) 或批量选择</p>
+                    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                    <!-- 预览图片将在这里动态添加 -->
+                </div>
+                <button class="submit-btn" id="submitBtn">上传</button>
+            </section>
+
+            <!-- 右侧展示区域 -->
+            <section class="display-section">
+                <div class="view-toggle">
+                    <button class="active" data-view="images">图片列表</button>
+                    <button data-view="titles">标题列表</button>
+                </div>
+
+                <!-- 资源展示区 -->
+                <div class="resource-grid" id="resourceGrid">
+                    <!-- 资源卡片将通过 JavaScript 动态加载 -->
+                </div>
+
+                <!-- 标题列表视图 -->
+                <div class="title-list" id="titleList" style="display: none;">
+                    <!-- 标题列表将通过 JavaScript 动态加载 -->
+                </div>
+
+                <!-- 分页控件 -->
+                <div class="pagination">
+                    <button class="prev-page">上一页</button>
+                    <span class="current-page">1</span>
+                    <button class="next-page">下一页</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script src="js/main.js"></script>
+</body>
+</html> 
