@@ -325,7 +325,7 @@ function resetForm() {
 // 加载资源列表
 async function loadResources(keyword = '') {
     try {
-        const response = await fetch(`/api/resources?page=${currentPage}&limit=${itemsPerPage}&search=${keyword}`);
+        const response = await fetch(`/api/resources?page=${currentPage}&limit=12&search=${keyword}&view=${currentView}`);
         if (!response.ok) throw new Error('加载失败');
 
         const { data, total } = await response.json();
@@ -508,7 +508,9 @@ function toggleView() {
         resourceGrid.style.display = 'none';
         titleList.style.display = 'block';
     }
-    loadResources();
+    // 切换视图时重置到第一页
+    currentPage = 1;
+    loadResources(searchInput.value.trim());
 }
 
 // 更新分页

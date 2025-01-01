@@ -83,22 +83,32 @@ app.get('/api/resources', (req, res) => {
     const { page = 1, limit = 12, search = '' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    let query = 'SELECT * FROM resources';
-    let countQuery = 'SELECT COUNT(*) as total FROM resources';
+    let imageQuery = 'SELECT * FROM resources WHERE imageUrl IS NOT NULL';
+    let titleQuery = 'SELECT * FROM resources WHERE title IS NOT NULL';
+    let countImageQuery = 'SELECT COUNT(*) as total FROM resources WHERE imageUrl IS NOT NULL';
+    let countTitleQuery = 'SELECT COUNT(*) as total FROM resources WHERE title IS NOT NULL';
     let params = [];
     let countParams = [];
     
     if (search) {
-        query += ` WHERE movieName LIKE ? OR title LIKE ?`;
-        countQuery += ` WHERE movieName LIKE ? OR title LIKE ?`;
+        const searchCondition = ` AND (movieName LIKE ? OR title LIKE ?)`;
+        imageQuery += searchCondition;
+        titleQuery += searchCondition;
+        countImageQuery += searchCondition;
+        countTitleQuery += searchCondition;
         const searchParam = `%${search}%`;
         params = [searchParam, searchParam];
         countParams = [searchParam, searchParam];
     }
     
-    // 添加排序和分页，确保按创建时间倒序排列
-    query += ` ORDER BY createdAt DESC LIMIT ? OFFSET ?`;
+    // 添加排序和分页
+    imageQuery += ` ORDER BY createdAt DESC LIMIT ? OFFSET ?`;
+    titleQuery += ` ORDER BY createdAt DESC LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), offset);
+
+    // 根据当前视图类型选择查询
+    const query = req.query.view === 'titles' ? titleQuery : imageQuery;
+    const countQuery = req.query.view === 'titles' ? countTitleQuery : countImageQuery;
 
     db.get(countQuery, countParams, (err, row) => {
         if (err) {
