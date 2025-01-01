@@ -81,54 +81,42 @@ function initDatabase() {
 // 获取资源列表
 app.get('/api/resources', (req, res) => {
     const { page = 1, limit = 12, search = '' } = req.query;
-    const offset = (page - 1) * limit;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let query = 'SELECT * FROM resources';
     let countQuery = 'SELECT COUNT(*) as total FROM resources';
+    let params = [];
+    let countParams = [];
     
     if (search) {
         query += ` WHERE movieName LIKE ? OR title LIKE ?`;
         countQuery += ` WHERE movieName LIKE ? OR title LIKE ?`;
         const searchParam = `%${search}%`;
-        
-        db.get(countQuery, [searchParam, searchParam], (err, row) => {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            
-            db.all(query + ` ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
-                [searchParam, searchParam, limit, offset],
-                (err, rows) => {
-                    if (err) {
-                        return res.status(500).json({ error: err.message });
-                    }
-                    res.json({
-                        total: row.total,
-                        data: rows
-                    });
-                }
-            );
-        });
-    } else {
-        db.get(countQuery, [], (err, row) => {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            
-            db.all(query + ` ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
-                [limit, offset],
-                (err, rows) => {
-                    if (err) {
-                        return res.status(500).json({ error: err.message });
-                    }
-                    res.json({
-                        total: row.total,
-                        data: rows
-                    });
-                }
-            );
-        });
+        params = [searchParam, searchParam];
+        countParams = [searchParam, searchParam];
     }
+    
+    // 添加排序和分页，确保按创建时间倒序排列
+    query += ` ORDER BY createdAt DESC LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), offset);
+
+    db.get(countQuery, countParams, (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        
+        db.all(query, params, (err, rows) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({
+                total: row.total,
+                data: rows,
+                page: parseInt(page),
+                limit: parseInt(limit)
+            });
+        });
+    });
 });
 
 // 从标题中提取影视剧名称

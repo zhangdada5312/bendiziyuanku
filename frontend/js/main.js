@@ -109,27 +109,11 @@ async function handleXlsxUpload(event) {
         if (!response.ok) throw new Error('上传失败');
 
         const result = await response.json();
-        if (result.titles && result.titles.length > 0) {
-            // 将XLSX中的标题添加到文本框
-            const existingTitles = movieTitleInput.value.trim();
-            const newTitles = result.titles.map(t => t.title).join('\n');
-            movieTitleInput.value = existingTitles ? existingTitles + '\n' + newTitles : newTitles;
-            
-            // 自动提取第一个标题中的影视剧名称
-            if (!movieNameInput.value.trim() && result.titles.length > 0) {
-                const firstTitle = result.titles[0].title;
-                const match = firstTitle.match(/《(.+?)》/);
-                if (match) {
-                    movieNameInput.value = match[1];
-                }
-            }
-            
-            // 自动触发提交
-            handleSubmit();
-            showToast(`成功导入 ${result.titles.length} 条数据`);
-        } else {
-            showToast('未找到有效数据');
-        }
+        showToast(`成功导入 ${result.titlesCount} 条数据`);
+        
+        // 重置到第一页并重新加载资源列表
+        currentPage = 1;
+        loadResources(searchInput.value.trim());
     } catch (error) {
         showToast('XLSX上传失败');
         console.error('XLSX上传错误:', error);
@@ -319,7 +303,9 @@ async function handleSubmit() {
         const result = await response.json();
         showToast(`上传成功: ${result.imagesCount} 张图片, ${result.titlesCount} 个标题`);
         resetForm();
-        loadResources();
+        // 重置到第一页并重新加载资源列表
+        currentPage = 1;
+        loadResources(searchInput.value.trim());
     } catch (error) {
         showToast(error.message || '上传失败，请重试');
         console.error('上传错误:', error);
@@ -357,27 +343,25 @@ function displayResources(resources) {
     container.innerHTML = '';
 
     if (currentView === 'images') {
-        resources.forEach(resource => {
-            if (resource.imageUrl) {
-                const card = document.createElement('div');
-                card.className = 'resource-card';
-                
-                // 构建完整的图片URL
-                const imageUrl = resource.imageUrl.startsWith('http') 
-                    ? resource.imageUrl 
-                    : window.location.origin + resource.imageUrl;
+        resources.filter(resource => resource.imageUrl).forEach(resource => {
+            const card = document.createElement('div');
+            card.className = 'resource-card';
+            
+            // 构建完整的图片URL
+            const imageUrl = resource.imageUrl.startsWith('http') 
+                ? resource.imageUrl 
+                : window.location.origin + resource.imageUrl;
 
-                card.innerHTML = `
-                    <img src="${imageUrl}" alt="${resource.movieName || '未命名'}" loading="lazy" onerror="this.src='images/placeholder.png'">
-                    <div class="info">
-                        <h3>${resource.movieName || '未命名'}</h3>
-                    </div>
-                `;
-                
-                // 添加点击事件以复制图片
-                card.addEventListener('click', () => copyImageToClipboard(imageUrl));
-                container.appendChild(card);
-            }
+            card.innerHTML = `
+                <img src="${imageUrl}" alt="${resource.movieName || '未命名'}" loading="lazy" onerror="this.src='images/placeholder.png'">
+                <div class="info">
+                    <h3>${resource.movieName || '未命名'}</h3>
+                </div>
+            `;
+            
+            // 添加点击事件以复制图片
+            card.addEventListener('click', () => copyImageToClipboard(imageUrl));
+            container.appendChild(card);
         });
     } else {
         resources.forEach(resource => {
@@ -455,6 +439,8 @@ function displayResources(resources) {
                             if (response.ok) {
                                 item.remove();
                                 showToast('删除成功');
+                                // 删除后重新加载当前页
+                                loadResources(searchInput.value.trim());
                             } else {
                                 throw new Error('删除失败');
                             }

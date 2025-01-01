@@ -23,6 +23,7 @@ class Database {
                 movieName TEXT NOT NULL,
                 title TEXT,
                 imageUrl TEXT,
+                views INTEGER DEFAULT 0,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `;
@@ -74,10 +75,10 @@ class Database {
     }
 
     // 添加资源
-    addResource(movieName, title, imageUrl) {
+    addResource(movieName, title, imageUrl, views = 0) {
         return new Promise((resolve, reject) => {
-            const sql = `INSERT INTO resources (movieName, title, imageUrl) VALUES (?, ?, ?)`;
-            this.db.run(sql, [movieName, title, imageUrl], function(err) {
+            const sql = `INSERT INTO resources (movieName, title, imageUrl, views) VALUES (?, ?, ?, ?)`;
+            this.db.run(sql, [movieName, title, imageUrl, views], function(err) {
                 if (err) {
                     reject(err);
                     return;
@@ -86,7 +87,8 @@ class Database {
                     id: this.lastID,
                     movieName,
                     title,
-                    imageUrl
+                    imageUrl,
+                    views
                 });
             });
         });
