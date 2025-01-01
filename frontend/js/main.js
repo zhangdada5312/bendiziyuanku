@@ -109,8 +109,27 @@ async function handleXlsxUpload(event) {
         if (!response.ok) throw new Error('上传失败');
 
         const result = await response.json();
-        showToast(`成功导入 ${result.count} 条数据`);
-        loadResources();
+        if (result.titles && result.titles.length > 0) {
+            // 将XLSX中的标题添加到文本框
+            const existingTitles = movieTitleInput.value.trim();
+            const newTitles = result.titles.map(t => t.title).join('\n');
+            movieTitleInput.value = existingTitles ? existingTitles + '\n' + newTitles : newTitles;
+            
+            // 自动提取第一个标题中的影视剧名称
+            if (!movieNameInput.value.trim() && result.titles.length > 0) {
+                const firstTitle = result.titles[0].title;
+                const match = firstTitle.match(/《(.+?)》/);
+                if (match) {
+                    movieNameInput.value = match[1];
+                }
+            }
+            
+            // 自动触发提交
+            handleSubmit();
+            showToast(`成功导入 ${result.titles.length} 条数据`);
+        } else {
+            showToast('未找到有效数据');
+        }
     } catch (error) {
         showToast('XLSX上传失败');
         console.error('XLSX上传错误:', error);

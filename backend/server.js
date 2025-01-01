@@ -4,6 +4,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const fs = require('fs');
+const xlsx = require('xlsx');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -41,8 +42,14 @@ const upload = multer({
     },
     fileFilter: (req, file, cb) => {
         // 检查文件类型
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
-            return cb(new Error('只允许上传图片文件！'));
+        if (file.fieldname === 'xlsx') {
+            if (!file.originalname.match(/\.(xlsx|xls)$/i)) {
+                return cb(new Error('只允许上传 Excel 文件！'));
+            }
+        } else if (file.fieldname === 'images') {
+            if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                return cb(new Error('只允许上传图片文件！'));
+            }
         }
         cb(null, true);
     }
@@ -65,6 +72,7 @@ function initDatabase() {
         movieName TEXT NOT NULL,
         title TEXT,
         imageUrl TEXT,
+        views INTEGER DEFAULT 0,
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 }
@@ -133,13 +141,16 @@ function extractMovieName(title) {
 app.post('/api/resources', upload.array('images'), async (req, res) => {
     try {
         const { movieName } = req.body;
-        const titles = req.body.titles ? JSON.parse(req.body.titles) : [];
+        let titles = req.body.titles ? JSON.parse(req.body.titles) : [];
         const files = req.files || [];
 
-        // 验证：如果有图片，必须有影视剧名称
-        if (files.length > 0 && !movieName) {
-            return res.status(400).json({ error: '上传图片时必须填写影视剧名称' });
-        }
+        // 如果titles是字符串数组，转换为对象数组
+        titles = titles.map(title => {
+            if (typeof title === 'string') {
+                return { title: title, views: 0 };
+            }
+            return title;
+        });
 
         // 开始数据库事务
         await new Promise((resolve, reject) => {
@@ -163,11 +174,14 @@ app.post('/api/resources', upload.array('images'), async (req, res) => {
 
                 // 插入标题记录
                 titles.forEach(title => {
-                    const titleMovieName = movieName || extractMovieName(title);
+                    const titleText = typeof title === 'string' ? title : title.title;
+                    const views = typeof title === 'string' ? 0 : (title.views || 0);
+                    const titleMovieName = movieName || extractMovieName(titleText);
+                    
                     if (titleMovieName) {
                         db.run(
-                            'INSERT INTO resources (movieName, title) VALUES (?, ?)',
-                            [titleMovieName, title],
+                            'INSERT INTO resources (movieName, title, views) VALUES (?, ?, ?)',
+                            [titleMovieName, titleText, views],
                             (err) => {
                                 if (err) {
                                     console.error('插入标题记录失败:', err);
@@ -193,12 +207,7 @@ app.post('/api/resources', upload.array('images'), async (req, res) => {
             message: '上传成功',
             movieName,
             titlesCount: titles.length,
-            imagesCount: files.length,
-            // 返回上传的图片URL列表
-            images: files.map(file => ({
-                url: `/uploads/${file.filename}`,
-                name: file.originalname
-            }))
+            imagesCount: files.length
         });
     } catch (error) {
         console.error('上传错误:', error);
@@ -218,6 +227,78 @@ app.delete('/api/resources/:id', (req, res) => {
         }
         res.json({ message: '删除成功' });
     });
+});
+
+// 处理XLSX上传
+app.post('/api/upload-xlsx', upload.single('xlsx'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: '未找到上传的文件' });
+        }
+
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(worksheet, { 
+            header: 1,  // 使用数组格式
+            raw: false  // 确保所有值都被转换为字符串
+        });
+
+        // 删除临时文件
+        fs.unlinkSync(req.file.path);
+
+        // 处理每一行数据
+        const titles = data.filter(row => row && row[0] && row[0].trim());
+
+        // 开始数据库事务
+        await new Promise((resolve, reject) => {
+            db.serialize(() => {
+                db.run('BEGIN TRANSACTION');
+
+                // 插入每个标题作为独立记录
+                titles.forEach(row => {
+                    const title = row[0].trim();
+                    const views = parseInt(row[1]) || 0;
+                    const movieName = extractMovieName(title);
+                    
+                    if (movieName) {
+                        db.run(
+                            'INSERT INTO resources (movieName, title, views) VALUES (?, ?, ?)',
+                            [movieName, title, views],
+                            (err) => {
+                                if (err) {
+                                    console.error('插入标题记录失败:', err);
+                                    reject(err);
+                                }
+                            }
+                        );
+                    }
+                });
+
+                db.run('COMMIT', (err) => {
+                    if (err) {
+                        console.error('提交事务失败:', err);
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+        });
+
+        res.json({
+            message: '上传成功',
+            titlesCount: titles.length
+        });
+    } catch (error) {
+        console.error('处理XLSX文件失败:', error);
+        // 回滚事务
+        db.run('ROLLBACK');
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ error: '处理XLSX文件失败' });
+    }
 });
 
 // 错误处理中间件
