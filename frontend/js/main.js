@@ -357,10 +357,40 @@ function displayResources(resources) {
                 <div class="info">
                     <h3>${resource.movieName || '未命名'}</h3>
                 </div>
+                <button class="delete-image-btn" data-id="${resource.id}">×</button>
             `;
             
-            // 添加点击事件以复制图片
-            card.addEventListener('click', () => copyImageToClipboard(imageUrl));
+            // 添加点击事件以复制图片和预览
+            const img = card.querySelector('img');
+            img.addEventListener('click', () => {
+                copyImageToClipboard(imageUrl);
+                showImagePreview(imageUrl);
+            });
+
+            // 添加删除按钮事件
+            const deleteBtn = card.querySelector('.delete-image-btn');
+            deleteBtn.onclick = async (e) => {
+                e.stopPropagation();
+                if (confirm('确定要删除这张图片吗？')) {
+                    try {
+                        const response = await fetch(`/api/resources/${resource.id}`, {
+                            method: 'DELETE'
+                        });
+                        if (response.ok) {
+                            card.remove();
+                            showToast('删除成功');
+                            // 删除后重新加载当前页
+                            loadResources(searchInput.value.trim());
+                        } else {
+                            throw new Error('删除失败');
+                        }
+                    } catch (error) {
+                        console.error('删除失败:', error);
+                        showToast('删除失败');
+                    }
+                }
+            };
+
             container.appendChild(card);
         });
     } else {
@@ -547,6 +577,36 @@ function showToast(message) {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+}
+
+// 显示图片预览
+function showImagePreview(imageUrl) {
+    // 创建预览容器
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'image-preview-container';
+    previewContainer.innerHTML = `
+        <div class="image-preview-content">
+            <img src="${imageUrl}" alt="预览图">
+        </div>
+    `;
+
+    // 点击背景关闭预览
+    previewContainer.addEventListener('click', (e) => {
+        if (e.target === previewContainer) {
+            previewContainer.remove();
+        }
+    });
+
+    // ESC键关闭预览
+    const handleEsc = (e) => {
+        if (e.key === 'Escape') {
+            previewContainer.remove();
+            document.removeEventListener('keydown', handleEsc);
+        }
+    };
+    document.addEventListener('keydown', handleEsc);
+
+    document.body.appendChild(previewContainer);
 }
 
 // 启动应用

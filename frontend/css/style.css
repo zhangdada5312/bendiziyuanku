@@ -465,4 +465,59 @@ body {
     .resource-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
+}
+
+/* 图片删除按钮 */
+.delete-image-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.resource-card:hover .delete-image-btn {
+    opacity: 1;
+}
+
+.delete-image-btn:hover {
+    background: rgba(220, 53, 69, 0.8);
+}
+
+/* 图片预览 */
+.image-preview-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.image-preview-content {
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.image-preview-content img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    cursor: default;
 } 
